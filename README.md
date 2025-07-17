@@ -122,3 +122,9 @@ The built files will be in the `dist/` directory.
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
+
+
+# Frontend .env file
+VITE_API_BASE_URL=http://localhost:8000/api
+VITE_APP_NAME=Post Manager
+
