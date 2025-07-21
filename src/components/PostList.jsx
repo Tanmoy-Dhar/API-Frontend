@@ -5,6 +5,7 @@ import PostCard from './PostCard';
 import Header from './Header';
 import LoadingSpinner from './LoadingSpinner';
 import Notification from './Notification';
+import { XCircle, FileText, Sparkles, X } from 'lucide-react';
 
 const PostList = () => {
   const [posts, setPosts] = useState([]);
@@ -18,9 +19,7 @@ const PostList = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      // console.log('Starting to fetch posts...');
       const response = await postsAPI.getAllPosts();
-      // console.log('Received response:', response);
       
       // Handle different response structures
       let postsData = [];
@@ -30,16 +29,14 @@ const PostList = () => {
         postsData = response;
       }
       
-      // console.log('Setting posts data:', postsData);
       setPosts(postsData);
       setError(null);
     } catch (err) {
       console.error('Error in fetchPosts:', err);
-      // Handle authentication error differently
       if (err.status === 401) {
-        setError('Authentication required. Please check if the API routes are protected.');
+        setError('Authentication required. Please log in to view posts.');
       } else {
-        setError(err.message || 'Failed to fetch posts. Please ensure the Laravel server is running.');
+        setError(err.message || 'Failed to fetch posts. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -49,31 +46,40 @@ const PostList = () => {
   // Handle create post
   const handleCreatePost = async (postData) => {
     try {
-      await postsAPI.createPost(postData);
+      const response = await postsAPI.createPost(postData);
+      setPosts([response.data, ...posts]);
       setShowForm(false);
-      setNotification({ type: 'success', message: 'Post created successfully!' });
-      fetchPosts();
-    } catch (err) {
-      setError(err.message || 'Failed to create post');
+      setNotification({
+        type: 'success',
+        message: 'Post created successfully!'
+      });
+    } catch (error) {
+      console.error('Error creating post:', error);
+      setNotification({
+        type: 'error',
+        message: 'Failed to create post. Please try again.'
+      });
     }
   };
 
   // Handle update post
   const handleUpdatePost = async (id, postData) => {
     try {
-      console.log('Starting update for post ID:', id, 'with data:', postData);
-      const result = await postsAPI.updatePost(id, postData);
-      console.log('Update API call successful:', result);
-      
+      const response = await postsAPI.updatePost(id, postData);
+      setPosts(posts.map(post => 
+        post.id === id ? response.data : post
+      ));
       setEditingPost(null);
-      setNotification({ type: 'success', message: 'Post updated successfully!' });
-      
-      console.log('Calling fetchPosts to refresh data...');
-      await fetchPosts();
-      console.log('Posts refreshed after update');
-    } catch (err) {
-      console.error('Update failed:', err);
-      setError(err.message || 'Failed to update post');
+      setNotification({
+        type: 'success',
+        message: 'Post updated successfully!'
+      });
+    } catch (error) {
+      console.error('Error updating post:', error);
+      setNotification({
+        type: 'error',
+        message: 'Failed to update post. Please try again.'
+      });
     }
   };
 
@@ -82,10 +88,17 @@ const PostList = () => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
         await postsAPI.deletePost(id);
-        setNotification({ type: 'success', message: 'Post deleted successfully!' });
-        fetchPosts();
-      } catch (err) {
-        setError(err.message || 'Failed to delete post');
+        setPosts(posts.filter(post => post.id !== id));
+        setNotification({
+          type: 'success',
+          message: 'Post deleted successfully!'
+        });
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        setNotification({
+          type: 'error',
+          message: 'Failed to delete post. Please try again.'
+        });
       }
     }
   };
@@ -94,58 +107,73 @@ const PostList = () => {
     fetchPosts();
   }, []);
 
+  // Show loading state
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh' }}>
+      <div className="min-h-screen bg-gray-50">
         <Header onCreatePost={() => {}} postsCount={0} />
-        <div className="loading">
-          <LoadingSpinner size="large" message="Loading your posts..." />
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <LoadingSpinner size="large" />
+            <p className="mt-4 text-gray-600">Loading your posts...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh' }}>
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50">
       <Header onCreatePost={() => setShowForm(true)} postsCount={posts.length} />
-
-      {/* Main Content */}
-      <div className="container">
-        {/* Error Message */}
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Error State */}
         {error && (
-          <div className="error-message">
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{ marginRight: '8px' }}>❌</span>
-              <span>{error}</span>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex justify-between items-start">
+              <div className="flex">
+                <div className="text-red-400 mr-3">
+                  <XCircle size={20} />
+                </div>
+                <div>
+                  <h3 className="text-red-800 font-medium">Error loading posts</h3>
+                  <p className="text-red-700 mt-1">{error}</p>
+                  <button
+                    onClick={fetchPosts}
+                    className="mt-3 text-sm bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded transition-colors duration-200"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+              <button 
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-600 transition-colors duration-200"
+              >
+                <X size={16} />
+              </button>
             </div>
-            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>
-              ✕
-            </button>
           </div>
         )}
 
-        {/* Posts Grid */}
+        {/* Empty State */}
         {posts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>📝</div>
-            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#2d3748', marginBottom: '12px' }}>
-              No posts yet
-            </h2>
-            <p style={{ color: '#718096', marginBottom: '32px', fontSize: '16px' }}>
-              Create your first post to get started!
-            </p>
+          <div className="text-center py-12">
+            <div className="text-indigo-400 mb-4 flex justify-center">
+              <FileText size={64} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">No posts yet</h2>
+            <p className="text-gray-500 mb-8 text-lg">Create your first post to get started!</p>
             <button 
               onClick={() => setShowForm(true)}
-              className="btn btn-primary"
-              style={{ fontSize: '16px', padding: '16px 32px' }}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
             >
-              <span>✨</span>
+              <Sparkles size={20} className="mr-2" />
               <span>Create Your First Post</span>
             </button>
           </div>
         ) : (
-          <div className="posts-grid">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {posts.map(post => (
               <PostCard
                 key={post.id}
@@ -160,26 +188,50 @@ const PostList = () => {
 
       {/* Create Post Modal */}
       {showForm && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <PostForm
-              onSubmit={handleCreatePost}
-              onCancel={() => setShowForm(false)}
-            />
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowForm(false);
+            }
+          }}
+        >
+          <div className="relative min-h-screen flex items-center justify-center">
+            <div 
+              className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PostForm
+                onSubmit={handleCreatePost}
+                onCancel={() => setShowForm(false)}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {/* Edit Post Modal */}
       {editingPost && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <PostForm
-              post={editingPost}
-              onSubmit={(data) => handleUpdatePost(editingPost.id, data)}
-              onCancel={() => setEditingPost(null)}
-              isEditing={true}
-            />
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setEditingPost(null);
+            }
+          }}
+        >
+          <div className="relative min-h-screen flex items-center justify-center">
+            <div 
+              className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PostForm
+                post={editingPost}
+                onSubmit={(data) => handleUpdatePost(editingPost.id, data)}
+                onCancel={() => setEditingPost(null)}
+                isEditing={true}
+              />
+            </div>
           </div>
         </div>
       )}

@@ -14,6 +14,33 @@ const api = axios.create({
   timeout: 10000, // 10 second timeout
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle authentication errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is invalid or expired
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Posts API service
 export const postsAPI = {
   // Get all posts
@@ -173,6 +200,67 @@ export const postsAPI = {
       const response = await api.delete(`/posts/${id}`);
       return response.data;
     } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+};
+
+// Authentication API service
+export const authAPI = {
+  // Login user
+  login: async (credentials) => {
+    try {
+      const response = await api.post('/login', credentials);
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error.response) {
+        throw {
+          status: error.response.status,
+          message: error.response.data?.message || 'Login failed',
+          errors: error.response.data?.error
+        };
+      }
+      throw { message: 'Network error. Please try again.' };
+    }
+  },
+
+  // Register user
+  register: async (userData) => {
+    try {
+      const response = await api.post('/register', userData);
+      return response.data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      if (error.response) {
+        throw {
+          status: error.response.status,
+          message: error.response.data?.message || 'Registration failed',
+          errors: error.response.data?.error
+        };
+      }
+      throw { message: 'Network error. Please try again.' };
+    }
+  },
+
+  // Logout user
+  logout: async () => {
+    try {
+      const response = await api.post('/logout');
+      return response.data;
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get current user
+  getUser: async () => {
+    try {
+      const response = await api.get('/user');
+      return response.data;
+    } catch (error) {
+      console.error('Get user error:', error);
       throw error.response?.data || error.message;
     }
   },

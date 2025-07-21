@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import LoadingSpinner from './LoadingSpinner';
+import { Camera, X, Save } from 'lucide-react';
 
 const PostForm = ({ post, onSubmit, onCancel, isEditing = false }) => {
   const [formData, setFormData] = useState({
@@ -49,24 +51,39 @@ const PostForm = ({ post, onSubmit, onCancel, isEditing = false }) => {
     }
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileInputChange = (e) => {
+    e.stopPropagation();
     const file = e.target.files[0];
     handleImageChange(file);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragActive(false);
+    
     const file = e.dataTransfer.files[0];
-    handleImageChange(file);
+    if (file && file.type.startsWith('image/')) {
+      handleImageChange(file);
+    }
   };
 
-  const handleDrag = (e) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleUploadAreaClick = () => {
+    const fileInput = document.getElementById('file-upload');
+    if (fileInput) {
+      fileInput.click();
     }
   };
 
@@ -80,18 +97,11 @@ const PostForm = ({ post, onSubmit, onCancel, isEditing = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setLoading(true);
 
     try {
-      const data = new FormData();
-      data.append('title', formData.title);
-      data.append('description', formData.description);
-      
-      if (formData.image) {
-        data.append('image', formData.image);
-      }
-
-      await onSubmit(data);
+      await onSubmit(formData);
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
@@ -100,38 +110,32 @@ const PostForm = ({ post, onSubmit, onCancel, isEditing = false }) => {
   };
 
   return (
-    <div style={{ padding: '32px' }}>
+    <div className="p-4 sm:p-6 max-h-screen overflow-y-auto">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#2d3748', margin: '0 0 4px 0' }}>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
             {isEditing ? 'Edit Post' : 'Create New Post'}
           </h2>
-          <p style={{ color: '#718096', margin: 0 }}>
+          <p className="text-gray-600 text-sm sm:text-base">
             {isEditing ? 'Update your post details' : 'Share something amazing with the world'}
           </p>
         </div>
         <button
           onClick={onCancel}
           type="button"
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            fontSize: '24px', 
-            cursor: 'pointer',
-            padding: '8px',
-            borderRadius: '8px',
-            color: '#718096'
-          }}
+          className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors duration-200"
         >
-          ✕
+          <X size={20} />
         </button>
       </div>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Title Field */}
-        <div className="form-group">
-          <label htmlFor="title">Title *</label>
+        <div>
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+            Title *
+          </label>
           <input
             type="text"
             id="title"
@@ -140,122 +144,109 @@ const PostForm = ({ post, onSubmit, onCancel, isEditing = false }) => {
             onChange={handleInputChange}
             required
             placeholder="Enter an engaging title for your post"
-            className="input-field"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm sm:text-base"
           />
         </div>
 
         {/* Description Field */}
-        <div className="form-group">
-          <label htmlFor="description">Description *</label>
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            Description *
+          </label>
           <textarea
             id="description"
             name="description"
             value={formData.description}
             onChange={handleInputChange}
             required
-            rows="4"
-            placeholder="Tell us more about your post..."
-            className="input-field"
-            style={{ resize: 'vertical', minHeight: '100px' }}
+            rows={4}
+            placeholder="Write a detailed description of your post..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm sm:text-base resize-vertical"
           />
         </div>
 
-        {/* Image Upload */}
-        <div className="form-group">
-          <label>Post Image</label>
-          {!imagePreview ? (
-            <div
-              onDrop={handleDrop}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              style={{
-                border: dragActive ? '3px dashed #667eea' : '2px dashed #e2e8f0',
-                borderRadius: '12px',
-                padding: '40px 20px',
-                textAlign: 'center',
-                backgroundColor: dragActive ? '#f0f4ff' : '#f7fafc',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                position: 'relative'
-              }}
-              onClick={() => document.getElementById('file-input').click()}
-            >
-              <input
-                id="file-input"
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-              />
-              <div style={{ fontSize: '48px', marginBottom: '16px', color: '#667eea' }}>
-                📸
-              </div>
-              <p style={{ fontSize: '16px', fontWeight: '600', color: '#4a5568', margin: '0 0 8px 0' }}>
-                {dragActive ? 'Drop image here' : 'Click to upload or drag & drop'}
-              </p>
-              <p style={{ fontSize: '14px', color: '#718096', margin: 0 }}>
-                PNG, JPG, GIF up to 10MB
-              </p>
-            </div>
-          ) : (
-            <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* Image Upload Field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Image (Optional)
+          </label>
+          
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="mb-4 relative inline-block">
               <img
                 src={imagePreview}
                 alt="Preview"
-                style={{
-                  width: '100%',
-                  height: '200px',
-                  objectFit: 'cover',
-                  display: 'block'
-                }}
+                className="max-w-full h-32 sm:h-40 object-cover rounded-lg shadow-md"
               />
               <button
                 type="button"
                 onClick={removeImage}
-                style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  background: 'rgba(239, 68, 68, 0.9)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '16px'
-                }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
           )}
+
+          {/* Drop Zone */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={handleUploadAreaClick}
+            className={`relative border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors duration-200 cursor-pointer ${
+              dragActive
+                ? 'border-indigo-500 bg-indigo-50'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            <div className="space-y-2">
+              <div className="text-indigo-500">
+                <Camera size={32} className="mx-auto" />
+              </div>
+              <div className="text-sm sm:text-base text-gray-600">
+                <span className="font-medium">Click to upload</span> or drag and drop
+              </div>
+              <div className="text-xs sm:text-sm text-gray-500">
+                PNG, JPG, GIF up to 2MB
+              </div>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileInputChange}
+              className="hidden"
+              id="file-upload"
+            />
+          </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
+        <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <button
             type="button"
             onClick={onCancel}
-            className="btn btn-secondary"
-            style={{ flex: 1 }}
+            className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary"
-            style={{ flex: 1 }}
+            className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
           >
             {loading ? (
-              <span>⏳ {isEditing ? 'Updating...' : 'Creating...'}</span>
+              <>
+                <LoadingSpinner size="small" color="white" />
+                <span className="ml-2">
+                  {isEditing ? 'Updating...' : 'Creating...'}
+                </span>
+              </>
             ) : (
-              <span>{isEditing ? '✏️ Update Post' : '🚀 Create Post'}</span>
+              <span>
+                {isEditing ? 'Update Post' : 'Create Post'}
+              </span>
             )}
           </button>
         </div>

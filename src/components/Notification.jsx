@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 const Notification = ({ type = 'success', message, onClose, duration = 5000 }) => {
   useEffect(() => {
@@ -11,99 +12,42 @@ const Notification = ({ type = 'success', message, onClose, duration = 5000 }) =
     }
   }, [duration, onClose]);
 
-  const getStyle = () => {
+  const getClasses = () => {
     switch (type) {
       case 'success':
-        return {
-          backgroundColor: '#c6f6d5',
-          color: '#2f855a',
-          borderLeft: '4px solid #38a169'
-        };
+        return 'bg-green-50 text-green-800 border-l-green-500';
       case 'error':
-        return {
-          backgroundColor: '#fed7d7',
-          color: '#9b2c2c',
-          borderLeft: '4px solid #e53e3e'
-        };
+        return 'bg-red-50 text-red-800 border-l-red-500';
       case 'warning':
-        return {
-          backgroundColor: '#fefcbf',
-          color: '#975a16',
-          borderLeft: '4px solid #d69e2e'
-        };
+        return 'bg-yellow-50 text-yellow-800 border-l-yellow-500';
       default:
-        return {
-          backgroundColor: '#bee3f8',
-          color: '#2c5282',
-          borderLeft: '4px solid #3182ce'
-        };
+        return 'bg-blue-50 text-blue-800 border-l-blue-500';
     }
   };
 
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return '✅';
+        return <CheckCircle size={20} />;
       case 'error':
-        return '❌';
+        return <XCircle size={20} />;
       case 'warning':
-        return '⚠️';
+        return <AlertTriangle size={20} />;
       default:
-        return 'ℹ️';
+        return <Info size={20} />;
     }
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 1000,
-        padding: '16px 20px',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        minWidth: '300px',
-        maxWidth: '500px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-        animation: 'slideIn 0.3s ease-out',
-        ...getStyle()
-      }}
-    >
-      <span style={{ fontSize: '18px' }}>{getIcon()}</span>
-      <span style={{ flex: 1, fontWeight: '500' }}>{message}</span>
+    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border-l-4 flex items-center gap-3 min-w-72 max-w-sm sm:max-w-md md:max-w-lg animate-slide-in ${getClasses()}`}>
+      <span>{getIcon()}</span>
+      <span className="flex-1 font-medium text-sm sm:text-base">{message}</span>
       <button
         onClick={onClose}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'inherit',
-          cursor: 'pointer',
-          fontSize: '18px',
-          padding: '4px',
-          borderRadius: '4px',
-          opacity: 0.7
-        }}
-        onMouseOver={(e) => e.target.style.opacity = '1'}
-        onMouseOut={(e) => e.target.style.opacity = '0.7'}
+        className="text-current opacity-70 hover:opacity-100 transition-opacity duration-200 p-1 rounded"
       >
-        ✕
+        <X size={16} />
       </button>
-      
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 };
