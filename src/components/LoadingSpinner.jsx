@@ -12,5 +12,4 @@ const LoadingSpinner = ({ size = 'medium', message = 'Loading...' }) => {
     </div>
   );
 };
-
 export default LoadingSpinner;
