@@ -18,9 +18,9 @@ const PostList = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      console.log('Starting to fetch posts...');
+      // console.log('Starting to fetch posts...');
       const response = await postsAPI.getAllPosts();
-      console.log('Received response:', response);
+      // console.log('Received response:', response);
       
       // Handle different response structures
       let postsData = [];
@@ -30,7 +30,7 @@ const PostList = () => {
         postsData = response;
       }
       
-      console.log('Setting posts data:', postsData);
+      // console.log('Setting posts data:', postsData);
       setPosts(postsData);
       setError(null);
     } catch (err) {

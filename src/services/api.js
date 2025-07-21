@@ -19,9 +19,9 @@ export const postsAPI = {
   // Get all posts
   getAllPosts: async () => {
     try {
-      console.log('Fetching posts from:', `${API_BASE_URL}/posts`);
+      // console.log('Fetching posts from:', `${API_BASE_URL}/posts`);
       const response = await api.get('/posts');
-      console.log('Posts response:', response.data);
+      // console.log('Posts response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching posts:', error);
